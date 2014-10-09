@@ -44,6 +44,7 @@ import visualization_msgs.msg as visualization_msgs
 
 from python_qt_binding.QtCore import Signal, QObject, pyqtSlot
 import rocon_qt_library.utils as utils
+from world_canvas_client import AnnotationCollection, WCFError
 
 
 class MapAnnotationInterface(QObject):
@@ -55,7 +56,7 @@ class MapAnnotationInterface(QObject):
                  viz_markers_received_slot=None,
                  viz_markers_topic='viz_markers',
                  scene_update_slot=None,
-                 save_annotation_srv='save_annotation',
+                 wc_namespace='world_canvas',
                  _tf=None):
 
         super(MapAnnotationInterface, self).__init__()
@@ -78,6 +79,8 @@ class MapAnnotationInterface(QObject):
 
         self.viz_markers_msg = None
         self.map_msg = None
+        self.wc_namespace = wc_namespace
+        self.ac_handler = AnnotationCollection() 
 
         self.sub_map = rospy.Subscriber(map_topic, nav_msgs.OccupancyGrid, self.map_cb)
         self.sub_viz_makers = rospy.Subscriber(viz_markers_topic, visualization_msgs.MarkerArray, self.viz_markers_cb)

@@ -97,10 +97,10 @@ class MakeAMap(Plugin):
             scan_slot = self._widget.slam_widget.draw_scan
             robot_pose_slot = self._widget.slam_widget.draw_robot_pose
 
+            wc_namespace = rospy.get_param('~wc_namespace', self._default_wc_namespace)
             map_topic = self._get_remaps(self._default_map_topic , msg.remappings)
             scan_topic = self._get_remaps(self._default_scan_topic, msg.remappings)
             robot_pose_topic = self._get_remaps(self._default_robot_pose, msg.remappings)
-            wc_namespace = self._get_remaps(self._default_wc_namespace, msg.remappings)
             map_saved_callbacks = [self._widget.slam_widget.map_saved_callback]
             self._widget.slam_widget.init_slam_widget_interface(map_topic=map_topic,
                                                                 scan_received_slot=scan_slot,

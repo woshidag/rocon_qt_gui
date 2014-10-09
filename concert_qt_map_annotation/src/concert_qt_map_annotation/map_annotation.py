@@ -61,9 +61,9 @@ class MapAnnotation(Plugin):
         # remappinags
         map_topic = self._default_map_topic
         viz_markers_topic = "/annotation/" + self._default_viz_markers_topic
+        wc_namespace = rospy.get_param('~wc_namespace', self._default_wc_namespace)
 
         #save_annotation_srv = self._default_save_annotation_srv
-
         viz_markers_slot = self._widget.map_annotation.draw_viz_markers
         scene_slot = self._widget.map_annotation.draw_scene
 
@@ -71,7 +71,9 @@ class MapAnnotation(Plugin):
             map_topic=map_topic,
             viz_markers_received_slot=viz_markers_slot,
             viz_markers_topic=viz_markers_topic,
-            scene_update_slot=scene_slot)
+            scene_update_slot=scene_slot,
+            wc_namespace=wc_namespace
+            )
 
     def _get_remaps(self, remap_from, remappings):
         for r in remappings:
