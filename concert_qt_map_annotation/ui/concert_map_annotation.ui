@@ -20,7 +20,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Make A Map</string>
+   <string>Concert Map Annotation</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="1" column="0">

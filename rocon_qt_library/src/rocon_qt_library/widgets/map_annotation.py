@@ -21,14 +21,14 @@ import rospy
 import tf
 from tf.transformations import quaternion_from_euler
 
+import rocon_qt_library.utils as utils
 from rocon_qt_library.interfaces import MapAnnotationInterface
 from rocon_qt_library.views import QMapView
+from world_canvas_client import AnnotationCollection
 
 #
 # Map Annotation
 #
-
-
 class QMapAnnotation(QWidget):
 
     def __init__(self, parent=None):
@@ -52,6 +52,8 @@ class QMapAnnotation(QWidget):
         self.point_y = 0
         self.map_resolution = 1
 
+        self._wc = None
+
         self._init_events()
 
     def _load_ui(self):
@@ -69,6 +71,25 @@ class QMapAnnotation(QWidget):
         self.ar_marker_cbox.stateChanged.connect(self._check_ar_marker_cbox)
         self.table_cbox.stateChanged.connect(self._check_table_cbox)
         self.save_annotation_btn.clicked.connect(self._save_annotation)
+        self.load_world_btn.clicked.connect(self._load_world)
+
+        self.connect(self, SIGNAL("show_message"), utils.show_message)
+
+    def _load_world(self):
+        world_name = self.world_name_text.toPlainText()
+        success, message, map_name_list = self._callback['load_world'](world_name)
+
+        if success:
+            self._update_map_selector(map_name_list)
+        else:
+            self.emit(SIGNAL("show_message"), self, "Failed", message)
+
+    def _update_map_selector(self, map_name_list):
+
+        self.map_select_combobox.clear()
+        
+    #    for name in map_name_list:
+
 
     def _save_annotation(self):
         if self.annotation:
@@ -188,6 +209,7 @@ class QMapAnnotation(QWidget):
                                                                 scene_update_slot=scene_update_slot,
                                                                 wc_namespace=wc_namespace
                                                                 )
+        self._callback['load_world']      = self._map_annotation_interface.load_world
         self._callback['save_annotation'] = self._map_annotation_interface.save_annotation
 
     @pyqtSlot(dict)

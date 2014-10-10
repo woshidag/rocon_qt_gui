@@ -80,11 +80,61 @@ class MapAnnotationInterface(QObject):
         self.viz_markers_msg = None
         self.map_msg = None
         self.wc_namespace = wc_namespace
-        self.ac_handler = AnnotationCollection() 
+        self.ac_handler_map    = AnnotationCollection(srv_namespace=self.wc_namespace)
+        self.ac_handler_others = AnnotationCollection(srv_namespace=self.wc_namespace)
 
         self.sub_map = rospy.Subscriber(map_topic, nav_msgs.OccupancyGrid, self.map_cb)
         self.sub_viz_makers = rospy.Subscriber(viz_markers_topic, visualization_msgs.MarkerArray, self.viz_markers_cb)
         #self.srv_save_annotation = rospy.ServiceProxy(save_annotation, visualization_msgs.Marker)
+
+    def load_world(self, world):
+        '''
+        loading world information from world canvas server
+
+        :returns: Map annotation
+        '''
+        # Loading map.
+        # Load the first map on map view
+        # return list of available maps
+        print(type(world))
+        print(str(world))
+        map_name_list, message = self._load_map(world)
+        if len(map_name_list) > 0:
+            self._load_annotations(world, map_name_list[0])
+        else:
+            return False, message, []
+
+        return True, message, map_name_list
+
+    def _load_map(self, world):
+        message = "Success"
+        try:
+            self.ac_handler_map.filterBy(world=world, types=['nav_msgs/OccupancyGrid'])
+            self.ac_handler_map.loadData()
+            map_annotations = self.ac_handler_map.getAnnotations(type='nav_msgs/OccupancyGrid')
+            self._map_annotations = map_annotations
+        except WCFError as e:
+            message = str(e)
+            return [], message
+
+
+        if len(self._map_annotations) < 1:
+            message = "No map available"
+            return [], message
+        
+        self.map_msg = self._map_annotations[0]
+        self.update_scene()
+        return [a.name for a in self._map_annotations], message
+        
+    def _load_annotations(self, world, map_name):
+        message = "Success"
+        try: 
+            self.ac_handler_others.filterBy(world=world)
+            self.ac_handler_others.loadData()
+        except WCFError as e:
+            message = str(e)
+        return message
+
 
     def save_annotation(self, data):
         viz_marker = visualization_msgs.Marker()
