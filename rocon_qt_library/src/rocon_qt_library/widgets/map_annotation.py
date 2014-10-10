@@ -180,12 +180,14 @@ class QMapAnnotation(QWidget):
         self.annotation['scale'] = (radius, radius, radius)
         self.annotation['radius'] = radius
 
-    def init_map_annotation_interface(self, map_topic, viz_markers_received_slot, viz_markers_topic, scene_update_slot):
+    def init_map_annotation_interface(self, map_topic, viz_markers_received_slot, viz_markers_topic, scene_update_slot, wc_namespace):
         self._map_annotation_interface = MapAnnotationInterface(map_received_slot=self.on_map_received,
                                                                 map_topic=map_topic,
                                                                 viz_markers_received_slot=viz_markers_received_slot,
                                                                 viz_markers_topic=viz_markers_topic,
-                                                                scene_update_slot=scene_update_slot)
+                                                                scene_update_slot=scene_update_slot,
+                                                                wc_namespace=wc_namespace
+                                                                )
         self._callback['save_annotation'] = self._map_annotation_interface.save_annotation
 
     @pyqtSlot(dict)
