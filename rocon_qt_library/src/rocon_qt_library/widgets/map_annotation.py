@@ -85,10 +85,10 @@ class QMapAnnotation(QWidget):
             self.emit(SIGNAL("show_message"), self, "Failed", message)
 
     def _update_map_selector(self, map_name_list):
-
         self.map_select_combobox.clear()
         
-    #    for name in map_name_list:
+        for name in map_name_list:
+            self.map_select_combobox.addItem(name)
 
 
     def _save_annotation(self):
@@ -214,9 +214,11 @@ class QMapAnnotation(QWidget):
 
     @pyqtSlot(dict)
     def draw_scene(self, data):
-        self.draw_map(data['map'])
-        self.draw_viz_markers(data['viz_markers'])
-        self.map_resolution = data['map_resolution']
+        if 'map' in data.keys():
+            self.draw_map(data['map'])
+            self.map_resolution = data['map_resolution']
+        if 'viz_markers' in data.keys():
+            self.draw_viz_markers(data['viz_markers'])
 
     def _draw_annotations(self, data):
         if not self.annotating:

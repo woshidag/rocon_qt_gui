@@ -83,8 +83,8 @@ class MapAnnotationInterface(QObject):
         self.ac_handler_map    = AnnotationCollection(srv_namespace=self.wc_namespace)
         self.ac_handler_others = AnnotationCollection(srv_namespace=self.wc_namespace)
 
-        self.sub_map = rospy.Subscriber(map_topic, nav_msgs.OccupancyGrid, self.map_cb)
-        self.sub_viz_makers = rospy.Subscriber(viz_markers_topic, visualization_msgs.MarkerArray, self.viz_markers_cb)
+        #self.sub_map = rospy.Subscriber(map_topic, nav_msgs.OccupancyGrid, self.map_cb)
+        #self.sub_viz_makers = rospy.Subscriber(viz_markers_topic, visualization_msgs.MarkerArray, self.viz_markers_cb)
         #self.srv_save_annotation = rospy.ServiceProxy(save_annotation, visualization_msgs.Marker)
 
     def load_world(self, world):
@@ -96,8 +96,6 @@ class MapAnnotationInterface(QObject):
         # Loading map.
         # Load the first map on map view
         # return list of available maps
-        print(type(world))
-        print(str(world))
         map_name_list, message = self._load_map(world)
         if len(map_name_list) > 0:
             self._load_annotations(world, map_name_list[0])
@@ -118,11 +116,11 @@ class MapAnnotationInterface(QObject):
             return [], message
 
 
-        if len(self._map_annotations) < 1:
+        if len(map_annotations) < 1:
             message = "No map available"
             return [], message
         
-        self.map_msg = self._map_annotations[0]
+        self.map_msg = self.ac_handler_map.getData(self._map_annotations[0])
         self.update_scene()
         return [a.name for a in self._map_annotations], message
         
@@ -154,8 +152,7 @@ class MapAnnotationInterface(QObject):
 
     def update_scene(self):
         draw_data = {}
-
-        if self.map_msg and self.viz_markers_msg:
+        if self.map_msg:
             # map data
             self.map_frame = self.map_msg.header.frame_id
             self.resolution = self.map_msg.info.resolution
@@ -163,6 +160,10 @@ class MapAnnotationInterface(QObject):
             self.h = self.map_msg.info.height
             self.ori_x = self.map_msg.info.origin.position.x
             self.ori_y = self.map_msg.info.origin.position.y
+            draw_data["map"] = self.map_msg
+            draw_data["map_resolution"] = self.resolution
+
+        if self.viz_markers_msg:
             # viz_marker_data
             viz_marker_items = []
             for marker in self.viz_markers_msg.markers:
@@ -199,10 +200,8 @@ class MapAnnotationInterface(QObject):
                 viz_marker['text'] = marker.text
                 viz_marker_items.append(viz_marker)
 
-            draw_data["map"] = self.map_msg
             draw_data["viz_markers"] = viz_marker_items
-            draw_data["map_resolution"] = self.resolution
-            self.scene_update.emit(draw_data)
+        self.scene_update.emit(draw_data)
 
     def map_cb(self, msg):
         """
