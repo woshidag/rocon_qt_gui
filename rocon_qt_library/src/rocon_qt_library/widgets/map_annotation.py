@@ -107,6 +107,7 @@ class QMapAnnotation(QWidget):
         if data == Qt.Checked:
             self.table_cbox.setCheckState(Qt.Unchecked)
             self.map_view.setDragMode(QGraphicsView.NoDrag)
+            self.anno_type = self.ar_marker_cbox.objectName()
             if self.annotation_item:
                 self._scene.removeItem(self.annotation_item)
                 self.annotation_item = None
@@ -117,6 +118,7 @@ class QMapAnnotation(QWidget):
         if data == Qt.Checked:
             self.ar_marker_cbox.setCheckState(Qt.Unchecked)
             self.map_view.setDragMode(QGraphicsView.NoDrag)
+            self.anno_type = self.table_cbox.objectName()
             if self.annotation_item:
                 self._scene.removeItem(self.annotation_item)
                 self.annotation_item = None
@@ -124,44 +126,30 @@ class QMapAnnotation(QWidget):
             self.map_view.setDragMode(QGraphicsView.ScrollHandDrag)
 
     def _mouseReleaseEvent(self, e):
-        if self.ar_marker_cbox.checkState() != Qt.Unchecked or self.table_cbox.checkState() != Qt.Unchecked:
+        if self.annotating:
             self.annotating = False
+            self.anno_type = None
             self.table_cbox.setCheckState(Qt.Unchecked)
             self.ar_marker_cbox.setCheckState(Qt.Unchecked)
 
     def _mousePressEvent(self, e):
-        if self.ar_marker_cbox.checkState() != Qt.Unchecked or self.table_cbox.checkState() != Qt.Unchecked:
+        if not self.annotating and self.anno_type:
             self.annotating = True
             self.annotation = {}
             self.point_x = e.scenePos().x()
             self.point_y = e.scenePos().y()
-            anno_type = None
-            if self.ar_marker_cbox.checkState() == Qt.Checked:
-                anno_type = self.ar_marker_cbox.objectName()
-            elif self.table_cbox.checkState() == Qt.Checked:
-                anno_type = self.table_cbox.objectName()
-            else:
-                return
 
-            self._set_annotating_info(anno_type=anno_type, x=self.point_x, y=self.point_y, radius=1)
+            self._set_annotating_info(anno_type=self.anno_type, x=self.point_x, y=self.point_y, radius=1)
             self._draw_annotations(self.annotation)
 
     def _mouseMoveEvent(self, e):
-        if self.ar_marker_cbox.checkState() != Qt.Unchecked or self.table_cbox.checkState() != Qt.Unchecked:
-            anno_type = None
-            if self.ar_marker_cbox.checkState() == Qt.Checked:
-                anno_type = self.ar_marker_cbox.objectName()
-            elif self.table_cbox.checkState() == Qt.Checked:
-                anno_type = self.table_cbox.objectName()
-            else:
-                return
-
+        if self.annotating:
             dx = e.scenePos().x() - self.point_x
             dy = e.scenePos().y() - self.point_y
             dist = math.hypot(dx, dy)
             yaw = math.degrees(math.atan2(dy, dx))
 
-            self._set_annotating_info(anno_type=anno_type, x=self.point_x, y=self.point_y, radius=dist, yaw=yaw)
+            self._set_annotating_info(anno_type=self.anno_type, x=self.point_x, y=self.point_y, radius=dist, yaw=yaw)
             self._draw_annotations(self.annotation)
 
     def _set_annotating_info(self, anno_type='', name='', x=0, y=0, height=0, radius=1, roll=90, pitch=0, yaw=0):
