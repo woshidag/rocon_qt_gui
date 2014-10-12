@@ -48,9 +48,6 @@ def create_alvar_marker_from_info(annotation_info, world, frame_id):
     ann.color.g = 0.2
     ann.color.b = 0.8
     ann.color.a = 0.5
-    ann.size.x = 0.18 
-    ann.size.y = 0.18
-    ann.size.z = 0.01 
     ann.pose.header.frame_id = frame_id
     ann.pose.header.stamp = rospy.Time.now()
     ann.pose.pose.pose.position.x = annotation_info['x']
@@ -75,19 +72,18 @@ def create_table_from_info(annotation_info, world, frame_id):
     ann.type = 'yocs_msgs/Table'
     ann.keywords.append(str(world))
     ann.shape = 3 # Arrow
-    ann.color.r = 1.0
-    ann.color.g = 1.0
-    ann.color.b = 1.0
-    ann.color.a = 1.0
-    ann.size.x = float(annotation_info['radius']) * 2 
-    ann.size.y = float(annotation_info['radius']) * 2 
-    ann.size.z = float(annotation_info['height']) 
+    ann.color.r = 0.2
+    ann.color.g = 0.2
+    ann.color.b = 0.8
+    ann.color.a = 0.5
+    ann.size.x = float(annotation_info['radius']) * 2
+    ann.size.y = float(annotation_info['radius']) * 2
+    ann.size.z = float(annotation_info['height'])
     ann.pose.header.frame_id = frame_id
     ann.pose.header.stamp = rospy.Time.now()
     ann.pose.pose.pose.position.x = annotation_info['x']
     ann.pose.pose.pose.position.y = annotation_info['y']
     ann.pose.pose.pose.position.z = annotation_info['height']
-
     (ann.pose.pose.pose.orientation.x, ann.pose.pose.pose.orientation.y, ann.pose.pose.pose.orientation.z, ann.pose.pose.pose.orientation.w) = tf.transformations.quaternion_from_euler(radians(annotation_info['roll']), radians(annotation_info['pitch']), radians(annotation_info['yaw']))
 
     obj = yocs_msgs.Table()

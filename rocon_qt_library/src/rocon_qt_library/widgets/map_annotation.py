@@ -203,7 +203,7 @@ class QMapAnnotation(QWidget):
         self.pitch_txt.clear()
         self.yaw_txt.clear()
 
-    def _set_annotating_info(self, anno_type='', name='', x=0, y=0, height=0, radius=1, roll=90, pitch=0, yaw=0):
+    def _set_annotating_info(self, anno_type='', name='', x=0, y=0, yaw=0, radius=1, roll=None, pitch=None, height=None):
         resolution = self._drawing_objects['map'].info.resolution
         origin = self._drawing_objects['map'].info.origin
         w = self._drawing_objects['map'].info.width
@@ -212,13 +212,19 @@ class QMapAnnotation(QWidget):
         self.annotation['type'] = anno_type
         self.annotation['x'] = (-x + w) * resolution + origin.position.x
         self.annotation['y'] = y * resolution + origin.position.y
-        self.annotation['height'] = height * resolution
-        self.annotation['yaw'] = yaw
-        self.annotation['roll'] = roll
-        self.annotation['pitch'] = pitch
+        self.annotation['yaw'] = yaw 
         self.annotation['radius'] = radius * resolution
-        self.annotation['scale'] = (radius * resolution * 2, radius * resolution * 2, height * resolution)
-        self.annotation['name'] = ''
+
+        if height != None:
+            self.annotation['height'] = height
+        if roll != None:
+            self.annotation['roll'] = roll
+        if pitch != None:
+            self.annotation['pitch'] = pitch
+
+        radius = self.annotation['radius']
+        self.annotation['scale'] = (radius, radius, radius)
+        self.annotation['name'] = name
 
     def _update_edit_annotation_box(self):
         self.name_txt.setText(str(self.annotation['name']))
@@ -281,7 +287,7 @@ class QMapAnnotation(QWidget):
             x = -((data['x'] - origin.position.x) / resolution - w)
             y = (data['y'] - origin.position.y) / resolution
             if data['type'] == "yocs_msgs/Table":
-                annotation_item = self._scene.addEllipse(x - (data['scale'][0] / resolution / 2), y -(data['scale'][1] / resolution / 2), data['scale'][0] / resolution, data['scale'][1] / resolution, pen=QPen(QColor(0, 0, 255)), brush=QBrush(QColor(0, 0, 255, 125)))
+                annotation_item = self._scene.addEllipse(x - (data['scale'][0] / resolution), y -(data['scale'][1] / resolution), data['scale'][0] / resolution * 2, data['scale'][1] / resolution * 2, pen=QPen(QColor(0, 0, 255)), brush=QBrush(QColor(0, 0, 255, 125)))
             elif data['type'] == "ar_track_alvar_msgs/AlvarMarker": 
                 viz_marker_pose = QMatrix().rotate(data['yaw']).map(self._viz_marker_polygon).translated(x, y)
                 annotation_item = self._scene.addPolygon(viz_marker_pose, pen=QPen(QColor(0, 0, 255)), brush=QBrush(QColor(0, 0, 255, 125)))
@@ -350,11 +356,13 @@ class QMapAnnotation(QWidget):
                 self.point_x = e.scenePos().x()
                 self.point_y = e.scenePos().y()
 
-                self._set_annotating_info(anno_type=self.anno_type, x=self.point_x, y=self.point_y, radius=1)
+                height = 0.5
+                radius = 1
+                roll = 90.0 if self.anno_type == 'ar_track_alvar_msgs/AlvarMarker' else 0.0
+                self._set_annotating_info(anno_type=self.anno_type, x=self.point_x, y=self.point_y, yaw=0.0, radius=radius, roll=roll, pitch=0.0, height=height)
                 self._update_edit_annotation_box()
                 
                 self.update_scene("on_annotation", self.annotation)
-            #self._draw_annotations(self.annotation)
 
     def _mouseMoveEvent(self, e):
         if self.annotating:
@@ -363,10 +371,9 @@ class QMapAnnotation(QWidget):
             dist = math.hypot(dx, dy)
             yaw = math.degrees(math.atan2(dy, dx))
 
-            self._set_annotating_info(anno_type=self.anno_type, x=self.point_x, y=self.point_y, radius=dist, yaw=yaw)
+            self._set_annotating_info(anno_type=self.anno_type, x=self.point_x, y=self.point_y, yaw=yaw, radius=dist, roll=None, pitch=None, height=None)
             self._update_edit_annotation_box()
             self.update_scene("on_annotation", self.annotation)
-            #self._draw_annotations(self.annotation)
 
 ###############################################################
 # Annotation List Events
