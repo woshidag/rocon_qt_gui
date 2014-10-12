@@ -44,10 +44,13 @@ def create_alvar_marker_from_info(annotation_info, world, frame_id):
     ann.type = 'ar_track_alvar_msgs/AlvarMarker'
     ann.keywords.append(str(world))
     ann.shape = 0 # Cylinder 
-    ann.color.r = 0.2
-    ann.color.g = 0.2
-    ann.color.b = 0.8
-    ann.color.a = 0.5
+    ann.color.r = 1.0
+    ann.color.g = 1.0
+    ann.color.b = 1.0
+    ann.color.a = 1.0
+    ann.size.x = 0.18 
+    ann.size.y = 0.18
+    ann.size.z = 0.01
     ann.pose.header.frame_id = frame_id
     ann.pose.header.stamp = rospy.Time.now()
     ann.pose.pose.pose.position.x = annotation_info['x']
@@ -83,7 +86,7 @@ def create_table_from_info(annotation_info, world, frame_id):
     ann.pose.header.stamp = rospy.Time.now()
     ann.pose.pose.pose.position.x = annotation_info['x']
     ann.pose.pose.pose.position.y = annotation_info['y']
-    ann.pose.pose.pose.position.z = annotation_info['height']
+    ann.pose.pose.pose.position.z = 0.0#annotation_info['height']
     (ann.pose.pose.pose.orientation.x, ann.pose.pose.pose.orientation.y, ann.pose.pose.pose.orientation.z, ann.pose.pose.pose.orientation.w) = tf.transformations.quaternion_from_euler(radians(annotation_info['roll']), radians(annotation_info['pitch']), radians(annotation_info['yaw']))
 
     obj = yocs_msgs.Table()
@@ -94,7 +97,7 @@ def create_table_from_info(annotation_info, world, frame_id):
     obj.pose.header.stamp = rospy.Time.now()
     obj.pose.pose.pose.position.x = annotation_info['x']
     obj.pose.pose.pose.position.y = annotation_info['y']
-    obj.pose.pose.pose.position.z = annotation_info['height']
+    obj.pose.pose.pose.position.z = 0.0
     (obj.pose.pose.pose.orientation.x, obj.pose.pose.pose.orientation.y, obj.pose.pose.pose.orientation.z, obj.pose.pose.pose.orientation.w) = tf.transformations.quaternion_from_euler(radians(annotation_info['roll']), radians(annotation_info['pitch']), radians(annotation_info['yaw']))
 
     # tables are assumed to lay on the floor, so z coordinate is zero;
