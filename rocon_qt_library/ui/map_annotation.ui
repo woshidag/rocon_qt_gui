@@ -186,12 +186,12 @@
         <widget class="QLabel" name="name_label">
          <property name="maximumSize">
           <size>
-           <width>75</width>
+           <width>80</width>
            <height>25</height>
           </size>
          </property>
          <property name="text">
-          <string>name:</string>
+          <string>name(or ID):</string>
          </property>
         </widget>
        </item>
@@ -375,32 +375,37 @@
       </layout>
      </item>
      <item>
-      <widget class="QPushButton" name="add_button">
-       <property name="text">
-        <string>Add</string>
-       </property>
-      </widget>
+      <layout class="QHBoxLayout" name="button_layout">
+       <item>
+        <widget class="QPushButton" name="add_annotation_btn">
+         <property name="text">
+          <string>Add</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="remove_annotation_btn">
+         <property name="text">
+          <string>Remove</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <layout class="QGridLayout" name="list_view_layout">
        <item row="1" column="0">
-        <widget class="QListView" name="annotation_list_view">
+        <widget class="QListWidget" name="annotations_list_widget">
          <property name="minimumSize">
           <size>
            <width>200</width>
            <height>0</height>
           </size>
          </property>
-         <property name="maximumSize">
-          <size>
-           <width>16777215</width>
-           <height>16777215</height>
-          </size>
-         </property>
         </widget>
        </item>
        <item row="0" column="0">
-        <widget class="QLabel" name="label_2">
+        <widget class="QLabel" name="annotations_label">
          <property name="text">
           <string>Annotations </string>
          </property>
