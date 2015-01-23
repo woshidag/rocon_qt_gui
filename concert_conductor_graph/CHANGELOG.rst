@@ -2,6 +2,9 @@
 Changelog for package concert_conductor_graph
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+0.7.4 (2014-12-30)
+------------------
+
 0.7.3 (2014-12-29)
 ------------------
 * commenting out debug messages `#169 <https://github.com/robotics-in-concert/rocon_qt_gui/issues/169>`_
