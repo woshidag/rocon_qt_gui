@@ -50,7 +50,7 @@ class QVideoTeleop(QWidget):
         # virtual joystick signals
         self.virtual_joystick_view.joystick_feedback().connect(self.on_joystick_feedback)
         self.virtual_joystick_view.mouse_released().connect(self.on_mouse_released)
-        self.on_compressed_image_received = self.camera_view.on_compressed_image_received
+        self.on_image_received = self.camera_view.on_image_received
 
         #keyboard control
         for k in self.children():
@@ -67,8 +67,8 @@ class QVideoTeleop(QWidget):
             self._teleop_interface.shutdown()
             self._teleop_interface = None
     
-    def init_teleop_interface(self, cmd_vel_topic_name, compressed_image_topic_name):
-        self._teleop_interface = VideoTeleopInterface(image_received_slot=self.on_compressed_image_received, cmd_vel_topic_name=cmd_vel_topic_name, compressed_image_topic_name=compressed_image_topic_name)
+    def init_teleop_interface(self, cmd_vel_topic_name, image_topic_name):
+        self._teleop_interface = VideoTeleopInterface(image_received_slot=self.on_image_received, cmd_vel_topic_name=cmd_vel_topic_name, image_topic_name=image_topic_name)
 
     def shutdown_plugin(self):
         if self._teleop_interface:

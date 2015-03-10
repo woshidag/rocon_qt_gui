@@ -50,7 +50,7 @@ class Teleop(Plugin):
         self.setObjectName('Teleop')
 
         self._default_cmd_vel_topic = '/teleop/cmd_vel'
-        self._default_compressed_image_topic = '/teleop/compressed_image'
+        self._default_image_topic = '/teleop/image'
 
     def shutdown(self):
         with self._lock: 
@@ -77,10 +77,10 @@ class Teleop(Plugin):
     def _init_teleop_interface(self, uri, msg):
         if msg.result:
             cmd_vel_topic = self._get_remapped_topic(self._default_cmd_vel_topic, msg.remappings)
-            compressed_image_topic = self._get_remapped_topic(self._default_compressed_image_topic, msg.remappings)
+            image_topic = self._get_remapped_topic(self._default_image_topic, msg.remappings)
 
             with self._lock:
-                self._widget.video_teleop_widget.init_teleop_interface(cmd_vel_topic_name=cmd_vel_topic, compressed_image_topic_name=compressed_image_topic)
+                self._widget.video_teleop_widget.init_teleop_interface(cmd_vel_topic_name=cmd_vel_topic, image_topic_name=image_topic)
 
     def _get_remapped_topic(self, remap_from, remappings):
         for r in remappings:

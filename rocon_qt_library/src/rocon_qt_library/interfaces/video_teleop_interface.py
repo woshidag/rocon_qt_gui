@@ -26,33 +26,33 @@ class VideoTeleopInterface(QObject):
                 '_cmd_vel',                  # geometry_msgs.Twist
                 '_cmd_vel_publisher_timer',
                 '_cmd_vel_publisher',
-                '_compressed_image_subscriber',
+                '_image_subscriber',
                 '_lock'
                 ]
-    image_received = Signal(sensor_msgs.CompressedImage, name="image_received")
+    image_received = Signal(sensor_msgs.Image, name="image_received")
 
     def __init__(self,
                  image_received_slot,
                  cmd_vel_topic_name='cmd_vel',
-                 compressed_image_topic_name='compressed_image'):
+                 image_topic_name='image'):
         """
         Initialise the robot interface with slot connections back to whatever
         qt views are attached and the ros topic names to be used.
 
         :param slot image_received_slot: slot to connect to the ``image_received`` signal.
         :param str cmd_vel_topic_name: topic name for the command velocity publisher.
-        :param str compressed_image_topic_name: topic name for the compressed image subscriber.
+        :param str image_topic_name: topic name for the image subscriber.
         """
         self._lock = threading.Lock()
         self._cmd_vel = geometry_msgs.Twist()
         self._cmd_vel.linear.x = self._cmd_vel.angular.z = 0.0
         super(VideoTeleopInterface, self).__init__()
         self._cmd_vel_publisher = None
-        self._compressed_image_subscriber = None
+        self._image_subscriber = None
         if image_received_slot is not None:
             self.image_received.connect(image_received_slot)
         self._cmd_vel_publisher = rospy.Publisher(cmd_vel_topic_name, geometry_msgs.Twist, latch=True, queue_size=10)
-        self._compressed_image_subscriber = rospy.Subscriber(compressed_image_topic_name, sensor_msgs.CompressedImage, self._ros_subscriber_image_callback)
+        self._image_subscriber = rospy.Subscriber(image_topic_name, sensor_msgs.Image, self._ros_subscriber_image_callback)
         self._cmd_vel_publisher_timer = \
             rospy.Timer(rospy.Duration(VideoTeleopInterface.cmd_vel_publishing_interval),
                         self._publish_cmd_vel
@@ -62,7 +62,7 @@ class VideoTeleopInterface(QObject):
         """
         Update the teleop image
 
-        :param sensor_msgs.CompressedImage msg: an image stream feed from the robot
+        :param sensor_msgs.Image msg: an image stream feed from the robot
         """
         # todo convert the image here
         self.image_received.emit(msg)
@@ -87,9 +87,9 @@ class VideoTeleopInterface(QObject):
         with self._lock:
             if self._cmd_vel_publisher:
                 self._cmd_vel_publisher.unregister()
-            if self._compressed_image_subscriber:
-                self._compressed_image_subscriber.unregister()
-            self._cmd_vel_publisher = self._compressed_image_subscriber = None
+            if self._image_subscriber:
+                self._image_subscriber.unregister()
+            self._cmd_vel_publisher = self._image_subscriber = None
 
     @property
     def cmd_vel(self):

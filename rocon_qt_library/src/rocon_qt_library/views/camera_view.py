@@ -23,7 +23,7 @@ import sensor_msgs.msg as sensor_msgs
 
 class QCameraView(QGraphicsView):
     """
-    Accepts an image of a teleop compressed image type and draws that in the
+    Accepts an image of a teleop image type and draws that in the
     scene/view.
     """
 
@@ -46,10 +46,10 @@ class QCameraView(QGraphicsView):
     def load_default_image(self): 
         self.emit(SIGNAL("load_default_image"))
         
-    @pyqtSlot(sensor_msgs.CompressedImage, name='image_received')
-    def on_compressed_image_received(self, image):
+    @pyqtSlot(sensor_msgs.Image, name='image_received')
+    def on_image_received(self, image):
         '''
-        :param sensor_msgs.CompressedImage image: convert and display this in the QGraphicsView.
+        :param sensor_msgs.Image image: convert and display this in the QGraphicsView.
         '''
         if len(self.scene.items()) > 1:
             self.scene.removeItem(self.scene.items()[0])
