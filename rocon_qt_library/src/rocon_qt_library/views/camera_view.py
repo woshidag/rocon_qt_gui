@@ -10,7 +10,7 @@
 from __future__ import division
 
 from python_qt_binding.QtCore import Qt, SIGNAL, pyqtSlot, QRectF  # QPointF, QRectF, 
-from python_qt_binding.QtGui import QGraphicsView, QGraphicsScene, QPixmap
+from python_qt_binding.QtGui import QGraphicsView, QGraphicsScene, QPixmap, QImage
 
 import os
 import rospkg
@@ -53,8 +53,7 @@ class QCameraView(QGraphicsView):
         '''
         if len(self.scene.items()) > 1:
             self.scene.removeItem(self.scene.items()[0])
-        pixmap = QPixmap()
-        pixmap.loadFromData(image.data, format=image.format)
+        pixmap = QPixmap.fromImage(QImage(image.data, image.width, image.height, QImage.Format_RGB888).rgbSwapped())
         self.scene.addPixmap(pixmap)
         self.scene.update()
         # setting fitInvView seems sensitive to here or prior to scene update
