@@ -55,7 +55,7 @@ class WaypointNavigation(Plugin):
         service_name = rospy.get_param('~service_name')
         print(str(service_name))
         available_resource_topic = '/services/%s/available_waypoint_nav'%service_name
-        capture_resource_pair_topic = '/services/%s/capture_waypiont_nav'%service_name
+        capture_resource_pair_topic = '/services/%s/capture_waypoint_nav'%service_name
         capture_resource_callbacks = [self._widget.resource_chooser_widget.capture_resource_callback]
         release_resource_callbacks = [self._widget.resource_chooser_widget.release_resource_callback]
         error_resource_callbacks   = [self._widget.resource_chooser_widget.error_resource_callback]
