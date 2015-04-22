@@ -17,28 +17,24 @@ from python_qt_binding.QtGui import QWidget
 
 import rospkg
 import rospy
-from rocon_qt_library.widgets import QResourceChooser, QVideoTeleop
+from rocon_qt_library.widgets import QResourceChooser
 from rocon_qt_library.interfaces import ResourceChooserInterface
 
 from qt_gui.plugin import Plugin
-
-##############################################################################
-# Teleop App
-##############################################################################
 
 class WaypointNavigation(Plugin):
     def __init__(self, context):
         self._lock = threading.Lock()
         self._context = context
-        super(Teleop, self).__init__(context)
+        super(Plugin, self).__init__(context)
         # I'd like these to be also configurable via the gui
         self.initialised = False
         self.is_setting_dlg_live = False
 
         self._widget = QWidget()
         rospack = rospkg.RosPack()
-        ui_file = os.path.join(rospack.get_path('concert_qt_waypoint_navigation'), 'ui', 'concert_waypint_navigation.ui')
-        loadUi(ui_file, self._widget, {'QResourceChooser' : QResourceChooser, 'QVideoTeleop' : QVideoTeleop})
+        ui_file = os.path.join(rospack.get_path('concert_qt_waypoint_navigation'), 'ui', 'concert_waypoint_navigation.ui')
+        loadUi(ui_file, self._widget, {'QResourceChooser' : QResourceChooser})
         if context.serial_number() > 1:
             self._widget.setWindowTitle(self._widget.windowTitle() + (' (%d)' % context.serial_number()))
 
@@ -52,19 +48,18 @@ class WaypointNavigation(Plugin):
         #self._default_compressed_image_topic = '/teleop/compressed_image'
 
     def shutdown(self):
-        with self._lock: 
-            if self._teleop_interface:
-                self._teleop_interface.shutdown()
-                self._teleop_interface = None
+        return
 
     def _set_resource_chooser_interface(self):
         capture_timeout = rospy.get_param('~capture_timeout', 15.0)
-        available_resource_topic = '/services/teleop/available_waypoint_nav' 
-        capture_resource_pair_topic = '/services/teleop/capture_waypiont_nav'
-        #capture_resource_callbacks = [self._widget.resource_chooser_widget.capture_resource_callback, self._init_teleop_interface]
-        #release_resource_callbacks = [self._widget.resource_chooser_widget.release_resource_callback, self._uninit_teleop_interface]
-        #error_resource_callbacks   = [self._widget.resource_chooser_widget.error_resource_callback]
-        #refresh_resource_list_callbacks = [self._widget.resource_chooser_widget.refresh_resource_list_callback]
+        service_name = rospy.get_param('~service_name')
+        print(str(service_name))
+        available_resource_topic = '/services/%s/available_waypoint_nav'%service_name
+        capture_resource_pair_topic = '/services/%s/capture_waypiont_nav'%service_name
+        capture_resource_callbacks = [self._widget.resource_chooser_widget.capture_resource_callback]
+        release_resource_callbacks = [self._widget.resource_chooser_widget.release_resource_callback]
+        error_resource_callbacks   = [self._widget.resource_chooser_widget.error_resource_callback]
+        refresh_resource_list_callbacks = [self._widget.resource_chooser_widget.refresh_resource_list_callback]
 
         self._resource_chooser_interface = ResourceChooserInterface(capture_timeout, available_resource_topic, capture_resource_pair_topic, capture_resource_callbacks, release_resource_callbacks, error_resource_callbacks, refresh_resource_list_callbacks)
 
@@ -88,10 +83,6 @@ class WaypointNavigation(Plugin):
                 return r.remap_to
         return remap_from
 
-    def  _uninit_teleop_interface(self, uri, msg):
-        if msg.result:
-            with self._lock:    
-                self._widget.video_teleop_widget.reset()
     '''
 
     def shutdown_plugin(self):

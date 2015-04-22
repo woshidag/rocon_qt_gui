@@ -43,11 +43,6 @@
    <extends>QWidget</extends>
    <header>rocon_qt_library.widgets</header>
   </customwidget>
-  <customwidget>
-   <class>QVideoTeleop</class>
-   <extends>QWidget</extends>
-   <header>rocon_qt_library.widgets</header>
-  </customwidget>
  </customwidgets>
  <resources/>
  <connections/>
