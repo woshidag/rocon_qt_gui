@@ -1,0 +1,17 @@
+<library path="src">
+  <class name="WaypointNavigation" type="concert_qt_waypoint_navigation.waypoint_navitation.WaypointNavigation" base_class_type="rqt_gui_py::Plugin">
+    <description>
+        Select and navigate a robot in the concert.
+    </description>
+    <qtgui>
+      <group>
+        <label>Concert</label>
+        <icon type="theme">folder</icon>
+        <statustip>Concert Waypoint navigation plugins for ROCON.</statustip>
+      </group>
+      <label>Teleop</label>
+      <icon type="file">./resources/images/rocon_logo.png</icon>
+      <statustip>Select and navigate a robot in the concert.</statustip>
+    </qtgui>
+  </class>
+</library>
