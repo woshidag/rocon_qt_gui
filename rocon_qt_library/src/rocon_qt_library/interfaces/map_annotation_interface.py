@@ -71,7 +71,7 @@ class MapAnnotationInterface(QObject):
         self.resolution = 1
         self.map_frame = None
 
-        self._annotations = None
+        self._annotations = []
         self.map_msg = None
         self.wc_namespace = wc_namespace
         self.ac_handler_map    = AnnotationCollection(srv_namespace=self.wc_namespace)
@@ -183,9 +183,19 @@ class MapAnnotationInterface(QObject):
         names = [a.name for a in annotations]
         return message, names
 
-    def _update_annotations(self, key,  annotations):
+    def _update_annotations(self, key, annotations, dynamic_map=None):
         viz_marker_items = []
         markers = utils.annotations_to_viz_markers(annotations)
+
+        if dynamic_map is not None:
+            # map data
+            self.map_frame = dynamic_map.header.frame_id
+            self.resolution = dynamic_map.info.resolution
+            self.w = dynamic_map.info.width
+            self.h = dynamic_map.info.height
+            self.ori_x = dynamic_map.info.origin.position.x
+            self.ori_y = dynamic_map.info.origin.position.y
+
         for marker in markers.markers:
             viz_marker = {}
             
@@ -226,16 +236,34 @@ class MapAnnotationInterface(QObject):
         draw_data[key] = viz_marker_items
         self.scene_update.emit(key, draw_data)
 
-    def add_annotation(self, annotation_info, annotation_type):
+    def redraw_annotation(self, msg):
+        if len(self._annotations) > 0:
+            self._update_annotations('annotations', self._annotations, msg)
+        if len(self._new_annotations) > 0:
+            self._update_annotations('new_annotations', self._new_annotations, msg)
+
+    def add_annotation(self, annotation_info, annotation_type, world_name, dynamic_map):
+        _world = None
+        _map = None
+        if world_name is not None:
+            _world = world_name
+        else:
+            _world = self._world
+
+        if dynamic_map is not None:
+            _map = dynamic_map
+        else:
+            _map = self._map
+
         if annotation_type == "ar_track_alvar_msgs/AlvarMarker": 
-            anno, data = utils.create_alvar_marker_from_info(annotation_info, self._world, self._map.header.frame_id)
+            anno, data = utils.create_alvar_marker_from_info(annotation_info, _world, _map.header.frame_id)
         elif annotation_type == "yocs_msgs/Waypoint":
-            anno, data = utils.create_waypoint_from_info(annotation_info, self._world, self._map.header.frame_id)
+            anno, data = utils.create_waypoint_from_info(annotation_info, _world, _map.header.frame_id)
 
         self._new_annotations.append(anno)
         self._new_annotations_data.append(data)
 
-        self._update_annotations('new_annotations', self._new_annotations)
+        self._update_annotations('new_annotations', self._new_annotations, _map)
 
         self.ac_handler_others.add(anno, data)
         new_annotation_names = [a.name for a in self._new_annotations]

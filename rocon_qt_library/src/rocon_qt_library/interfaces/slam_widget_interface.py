@@ -25,7 +25,9 @@ import rocon_qt_library.utils as utils
 
 class SlamWidgetInterface(QObject):
 
-    map_received = Signal(nav_msgs.OccupancyGrid, name='map_received')
+    # map_received = Signal(nav_msgs.OccupancyGrid, name='map_received')
+    map_received = Signal(str, dict, name='map_received')
+
     scan_received = Signal(list)
     robot_pose_received = Signal(dict)
 
@@ -88,7 +90,11 @@ class SlamWidgetInterface(QObject):
         self.ori_x = msg.info.origin.position.x
         self.ori_y = msg.info.origin.position.y
         self.map_msg = msg
-        self.map_received.emit(msg)
+        # self.map_received.emit(msg)
+
+        draw_data = {}
+        draw_data["map"] = msg
+        self.map_received.emit('map', draw_data)
 
     def scan_cb(self, msg):
         """

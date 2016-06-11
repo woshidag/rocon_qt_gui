@@ -26,26 +26,10 @@
    <item row="1" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QResourceChooser" name="resource_chooser_widget" native="true">
-       <property name="minimumSize">
-        <size>
-         <width>250</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>16777215</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QSlamWidget" name="slam_widget" native="true">
        <property name="minimumSize">
         <size>
-         <width>400</width>
+         <width>600</width>
          <height>0</height>
         </size>
        </property>
@@ -61,7 +45,7 @@
       <widget class="QVideoTeleop" name="video_teleop_widget" native="true">
        <property name="minimumSize">
         <size>
-         <width>300</width>
+         <width>200</width>
          <height>0</height>
         </size>
        </property>
@@ -78,11 +62,6 @@
   </layout>
  </widget>
  <customwidgets>
-  <customwidget>
-   <class>QResourceChooser</class>
-   <extends>QWidget</extends>
-   <header>rocon_qt_library.widgets</header>
-  </customwidget>
   <customwidget>
    <class>QVideoTeleop</class>
    <extends>QWidget</extends>
