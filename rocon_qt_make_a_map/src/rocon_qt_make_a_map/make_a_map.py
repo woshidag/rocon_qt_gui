@@ -54,13 +54,14 @@ class MakeAMap(Plugin):
         self._widget.video_teleop_widget.init_teleop_interface(self._default_cmd_vel_topic, self._default_compressed_image_topic)
 
         scan_slot = self._widget.slam_widget.draw_scan
-        robot_pose_slot = self._widget.slam_widget.draw_robot_pose
+        robot_pose_slot = self._widget.slam_widget.update_robot_pose
         # scan_topic = self._get_remaps(self._default_scan_topic, msg.remappings)
         # robot_pose_topic = self._get_remaps(self._default_robot_pose, msg.remappings)
         # wc_namespace_param = rospy.get_param('~wc_namespace_param')
         wc_namespace = rospy.get_param('/name')
         self._default_robot_pose = wc_namespace + '/' + self._default_robot_pose
-        console.logdebug("self._default_robot_pose = %s " % self._default_robot_pose)
+        self._default_map_topic = wc_namespace + '/' + self._default_map_topic
+        console.logdebug("self._default_scan_topic = %s " % self._default_scan_topic)
         map_saved_callbacks = [self._widget.slam_widget.map_saved_callback]
         self._widget.slam_widget.init_slam_widget_interface(map_topic=self._default_map_topic,
                                                                 scan_received_slot=scan_slot,

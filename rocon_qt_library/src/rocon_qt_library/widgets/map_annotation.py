@@ -28,6 +28,12 @@ from rocon_qt_library.views import QMapView
 from world_canvas_client import AnnotationCollection
 from visualization_msgs.msg import Marker
 
+from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+import actionlib
+from actionlib_msgs.msg import *
+from math import radians
+from geometry_msgs.msg import Pose, PoseWithCovarianceStamped, Point, Quaternion, Twist
+from rocon_console import console
 #
 # Map Annotation
 #
@@ -54,8 +60,20 @@ class QMapAnnotation(QWidget):
         self._init_events()
         self._drawing_objects = {}
 
+        self._robot_pose_item = None
+        self._robot_polygon = QPolygonF([QPointF(-4, 4), QPointF(-4, -4), QPointF(12, 0)])
+
         self._init_variables_for_drawing()
         self._init_variableS_for_list()
+        self._init_move_base()
+        self._init_pub_pose()
+
+    def _init_pub_pose(self):
+        self.pub_pose = rospy.Publisher('turtlebot/initialpose', PoseWithCovarianceStamped, queue_size=100)
+
+    def _init_move_base(self):
+        self.move_base = actionlib.SimpleActionClient("turtlebot/move_base", MoveBaseAction)
+        self.move_base.wait_for_server(rospy.Duration(5))
 
     def _init_variableS_for_list(self):
         self._annotation_name_list = []
@@ -95,6 +113,9 @@ class QMapAnnotation(QWidget):
         self.add_annotation_btn.clicked.connect(self._add_annotation)
         self.remove_annotation_btn.clicked.connect(self._remove_annotation)
         self.save_annotation_btn.clicked.connect(self._save_annotation)
+        self.set_pos_btn.clicked.connect(self._set_position)
+        self.goto_pos_btn.clicked.connect(self._goto_position)
+
         self.load_world_btn.clicked.connect(self._load_world)
         self.map_select_combobox.currentIndexChanged.connect(self._select_map_item_clicked)
         self.annotations_list_widget.itemClicked.connect(self._annotation_list_item_clicked)
@@ -104,8 +125,8 @@ class QMapAnnotation(QWidget):
         self.connect(self, SIGNAL("update_annotation_list"), self._update_annotation_list)
         self.connect(self, SIGNAL("update_map_selector"), self._update_map_selector)
 
-    def init_map_annotation_interface(self, scene_update_slot, wc_namespace):
-        self._map_annotation_interface = MapAnnotationInterface(scene_update_slot=self.update_scene, wc_namespace=wc_namespace)
+    def init_map_annotation_interface(self, scene_update_slot, wc_namespace, robot_pose_received_slot, robot_pose_topic):
+        self._map_annotation_interface = MapAnnotationInterface(scene_update_slot=self.update_scene, wc_namespace=wc_namespace, robot_pose_received_slot=robot_pose_received_slot, robot_pose_topic=robot_pose_topic)
         self._callback['list_world'] = self._map_annotation_interface.get_list_world
         self._callback['load_world'] = self._map_annotation_interface.load_world
         self._callback['load_map'] = self._map_annotation_interface.load_map
@@ -196,6 +217,78 @@ class QMapAnnotation(QWidget):
             elif ann_list == 'new_annotations':
                 self._new_annotation_name_list = names
             self.emit(SIGNAL("update_annotation_list"))
+
+    def _set_position(self):
+        item = self.annotations_list_widget.currentItem()
+        if item:
+            self._selected_annotation = str(item.text())
+            if self._selected_annotation.startswith('(new)'):
+                self._selected_annotation = self._selected_annotation[6:]
+            annotation_info = self._map_annotation_interface.get_annotation_info(self._selected_annotation)
+
+            if annotation_info:                
+                pos_x = annotation_info[2]
+                pos_y = annotation_info[3]
+                pos_z = 0
+                yaw = annotation_info[4]
+                pose = PoseWithCovarianceStamped()
+
+                pose.header.frame_id = 'map'
+                pose.header.stamp = rospy.Time.now()
+                # pose.header.seq = 6
+
+                q = tf.transformations.quaternion_from_euler(0, 0, yaw)
+                pose.pose.pose.orientation = Quaternion(q[0], q[1], q[2], q[3])
+
+                pose.pose.pose.position.x = pos_x
+                pose.pose.pose.position.y = pos_y
+                pose.pose.pose.position.z = pos_z
+                pose.pose.covariance[6*0+0] = 0.5 * 0.5
+                pose.pose.covariance[6*1+1] = 0.5 * 0.5
+                pose.pose.covariance[6*5+5] = math.pi/12.0 * math.pi/12.0
+                self.pub_pose.publish(pose)
+
+    def _goto_position(self):
+        item = self.annotations_list_widget.currentItem()
+        if item:
+            self._selected_annotation = str(item.text())
+            if self._selected_annotation.startswith('(new)'):
+                self._selected_annotation = self._selected_annotation[6:]
+            annotation_info = self._map_annotation_interface.get_annotation_info(self._selected_annotation)
+
+            if annotation_info:
+                goal = MoveBaseGoal()
+                goal.target_pose.header.frame_id = 'map'
+                # console.logdebug("_map_topic = %s" % self._map_topic)
+                goal.target_pose.header.stamp = rospy.Time.now()
+
+                pos_x = annotation_info[2]
+                pos_y = annotation_info[3]
+                pos_z = 0
+                roll = annotation_info[6]
+                pitch = annotation_info[7]
+                yaw = annotation_info[4]
+                #Where are they?  Set the person's pose
+                (orient_x, orient_y, orient_z, orient_w) = tf.transformations.quaternion_from_euler(radians(roll), radians(pitch), radians(yaw))
+                goal.target_pose.pose = Pose(Point(float(pos_x), float(pos_y), float(pos_z)), Quaternion(float(orient_x), float(orient_y), float(orient_z), float(orient_w)))
+                console.logdebug("orient_x = %s" % orient_x)
+                console.logdebug("orient_y = %s" % orient_y)
+                console.logdebug("orient_z = %s" % orient_z)
+                console.logdebug("orient_w = %s" % orient_w)
+                console.logdebug("pos_x = %s" % pos_x)
+                console.logdebug("pos_y = %s" % pos_y)
+                console.logdebug("pos_z = %s" % pos_z)            
+
+                #start moving
+                self.move_base.send_goal(goal)
+                success = self.move_base.wait_for_result(rospy.Duration(60)) 
+                if not success:
+                    self.move_base.cancel_goal()
+                    console.logdebug("The base failed to reach the desired pose")
+                else:
+                    state = self.move_base.get_state()
+                    if state == GoalStatus.SUCCEEDED:
+                        console.logdebug("Hooray, reached the desired pose!")
 
     def _save_annotation(self):
         success, message = self._callback['save_annotation']()
@@ -293,6 +386,20 @@ class QMapAnnotation(QWidget):
         elif object_name == 'on_annotation':
             self._drawing_objects['on_annotation'] = data
         self.emit(SIGNAL("draw_scene"), object_name)
+
+    @pyqtSlot(dict)
+    def draw_robot_pose(self, data):
+        old_item = None
+        if self._robot_pose_item:
+            old_item = self._robot_pose_item
+
+        robot_pose = QMatrix().rotate(data['yaw']).map(self._robot_polygon).translated(data['x'], data['y'])
+        self._robot_pose_item = self._scene.addPolygon(robot_pose, pen=QPen(QColor(255, 0, 0)), brush=QBrush(QColor(255, 0, 0)))
+
+        # Everything must be mirrored
+        self._mirror(self._robot_pose_item)
+        if old_item:
+            self._scene.removeItem(old_item)
 
     @pyqtSlot(str)
     def draw_scene(self, key):
@@ -432,6 +539,7 @@ class QMapAnnotation(QWidget):
                                             roll=annotation_info[6], 
                                             pitch=annotation_info[7], 
                                             height=annotation_info[8])
+
 
 ###############################################################
 # Map ItemClicked 

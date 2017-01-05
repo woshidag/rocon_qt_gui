@@ -47,17 +47,22 @@ from python_qt_binding.QtCore import Signal, QObject, pyqtSlot
 import rocon_qt_library.utils as utils
 from world_canvas_client import AnnotationCollection, WCFError
 from visualization_msgs.msg import Marker
-
+import geometry_msgs.msg as geometry_msgs
+from rocon_console import console
 
 class MapAnnotationInterface(QObject):
 
     scene_update = Signal(str, dict, name='scene_update')
+    robot_pose_received = Signal(dict)
 
-    def __init__(self, scene_update_slot=None, wc_namespace='world_canvas', _tf=None):
+    def __init__(self, scene_update_slot=None, wc_namespace='world_canvas', _tf=None, robot_pose_received_slot=None, robot_pose_topic='robot_pose'):
         super(MapAnnotationInterface, self).__init__()
         if scene_update_slot is not None:
             self.scene_update.connect(scene_update_slot)
         self.destroyed.connect(self.close)
+        if robot_pose_received_slot is not None:
+            self.robot_pose_received.connect(robot_pose_received_slot)
+
 
         if _tf is None:
             self._tf = tf.TransformListener()
@@ -79,6 +84,8 @@ class MapAnnotationInterface(QObject):
 
         self._new_annotations = []
         self._new_annotations_data = []
+
+        self.sub_robot_pose = rospy.Subscriber(robot_pose_topic, geometry_msgs.PoseStamped, self.robot_pose_cb)
 
     def get_list_world(self):
         try:
@@ -143,7 +150,9 @@ class MapAnnotationInterface(QObject):
             return message, []
         
         map_msg = self.ac_handler_map.get_data(self._map_annotations[0])
+        self.ac_handler_map.publish('turtlebot/map', 'nav_msgs/OccupancyGrid');
         self._update_map(map_msg)
+
         map_names = [a.name+"-"+str(a.id) for a in self._map_annotations]
         return message, map_names
 
@@ -153,6 +162,7 @@ class MapAnnotationInterface(QObject):
 
         # map data
         self.map_frame = self._map.header.frame_id
+        console.logdebug("map_frame = %s" % self.map_frame)
         self.resolution = self._map.info.resolution
         self.w = self._map.info.width
         self.h = self._map.info.height
@@ -325,8 +335,43 @@ class MapAnnotationInterface(QObject):
         else:
             return ()
 
+    def robot_pose_cb(self, msg):
+        """
+        Update the robot_pose
+
+        :param geometry_msgs.PoseStamped msg: robot pose data from system
+        """
+        # Transform everything in to the map frame
+        trans_pose = None
+        if self.map_frame:
+            if not (msg.header.frame_id == self.map_frame or msg.header.frame_id == ''):
+                try:
+                    self._tf.waitForTransform(msg.header.frame_id, self.map_frame, rospy.Time(), rospy.Duration(10))
+                    trans_pose = self._tf.transformPose(self.map_frame, msg)
+                except tf.Exception:
+                    rospy.logerr("TF Error")
+                    trans_pose = None
+            else:
+                trans_pose = msg
+
+        if trans_pose:
+            dx = (trans_pose.pose.position.x - self.ori_x) / self.resolution - self.w
+            dy = (trans_pose.pose.position.y - self.ori_y) / self.resolution
+            (droll, dpitch, dyaw) = tf.transformations.euler_from_quaternion([trans_pose.pose.orientation.x,
+                                                                             trans_pose.pose.orientation.y,
+                                                                             trans_pose.pose.orientation.z,
+                                                                             trans_pose.pose.orientation.w])
+            translated_robot_pose = {}
+            translated_robot_pose['x'] = dx
+            translated_robot_pose['y'] = dy
+            translated_robot_pose['yaw'] = degrees(dyaw)
+
+            self.robot_pose_received.emit(translated_robot_pose)
+
     def close(self):
         super(MapAnnotationInterface, self).close()
+        if self.sub_robot_pose:
+            self.sub_robot_pose.unregister()
 
     def save_settings(self, plugin_settings, instance_settings):
         # TODO add any settings to be saved

@@ -65,6 +65,9 @@ class QSlamWidget(QWidget):
         self._scan = None
         self._scan_items = []
 
+        self._const_world = "world"
+        self._const_map = "map"
+
         self._callback={}
         self._callback['save_map'] = None
 
@@ -78,7 +81,7 @@ class QSlamWidget(QWidget):
         self._init_variableS_for_list()
         self._init_map()
 
-        self._init_move_base()
+        # self._init_move_base()
 
     def _init_variableS_for_list(self):
         self._annotation_name_list = []
@@ -100,9 +103,9 @@ class QSlamWidget(QWidget):
     def _init_map(self):
         self._map = {}
 
-    def _init_move_base(self):
-        self.move_base = actionlib.SimpleActionClient("xiao2/move_base", MoveBaseAction)
-        self.move_base.wait_for_server(rospy.Duration(30))
+    # def _init_move_base(self):
+    #     self.move_base = actionlib.SimpleActionClient("turtlebot/move_base", MoveBaseAction)
+    #     self.move_base.wait_for_server(rospy.Duration(30))
 
     def _load_ui(self):
         rospack = rospkg.RosPack()
@@ -179,11 +182,14 @@ class QSlamWidget(QWidget):
     def save_map(self):
         if self._slam_widget_interface:
             self.setDisabled(True)
-            map_name = str(self.map_name_txt.toPlainText()).lower().replace(' ', '_')
-            world_name = str(self.world_name_txt.toPlainText()).lower().replace(' ', '_')
-            self.map_name_txt.setPlainText(map_name)
-            self.world_name_txt.setPlainText(world_name)
+            # map_name = str(self.map_name_txt.toPlainText()).lower().replace(' ', '_')
+            # world_name = str(self.world_name_txt.toPlainText()).lower().replace(' ', '_')
+            map_name = self._const_map
+            world_name = self._const_world
+            # self.map_name_txt.setPlainText(map_name)
+            # self.world_name_txt.setPlainText(world_name)
             self._callback['save_map'](world=world_name, map_name=map_name)
+            self._save_annotation()
         else:
             QMessageBox.warning(self, 'FAIL', "No map has created",QMessageBox.Ok | QMessageBox.Ok)
 
@@ -205,18 +211,36 @@ class QSlamWidget(QWidget):
                 self._scene.removeItem(item)
                 self._scan_items.remove(item)
 
-    @pyqtSlot(dict)
+    # @pyqtSlot(dict)
     def draw_robot_pose(self, data):
         old_item = None
         if self._robot_pose_item:
             old_item = self._robot_pose_item
 
         robot_pose = QMatrix().rotate(data['yaw']).map(self._robot_polygon).translated(data['x'], data['y'])
+
+
+        # print robot_pose.at(0)
+        # print robot_pose.at(1)
+        # print robot_pose.at(2)
+
         self._robot_pose_item = self._scene.addPolygon(robot_pose, pen=QPen(QColor(255, 0, 0)), brush=QBrush(QColor(255, 0, 0)))
+
         # Everything must be mirrored
         self._mirror(self._robot_pose_item)
         if old_item:
             self._scene.removeItem(old_item)
+
+    @pyqtSlot(dict)
+    def update_robot_pose(self, data):
+        self.draw_robot_pose(data)
+        self.save_robot_pose(data)
+
+    def save_robot_pose(self, data):
+        self._robot_pose = data
+
+    def get_robot_pose(self):
+        return self._robot_pose
 
     def _enable_buttons(self, enable):
         self.add_annotation_btn.setEnabled(enable)
@@ -237,12 +261,24 @@ class QSlamWidget(QWidget):
             self._get_annotating_info()
             anno = copy.deepcopy(self.annotation)
 
+            robot_pose = self.get_robot_pose()
+
+            resolution = self._drawing_objects['map'].info.resolution
+            origin = self._drawing_objects['map'].info.origin
+            w = self._drawing_objects['map'].info.width
+            h = self._drawing_objects['map'].info.height
+            
+            anno['x'] = (robot_pose['x'] + w) * resolution + origin.position.x
+            anno['y'] = robot_pose['y'] * resolution + origin.position.y
+            anno['yaw'] = robot_pose['yaw']
+
             if anno['name'] == '':
                 self.emit(SIGNAL('show_message'), self, "Failed", "Name is empty!")
             elif self.anno_type == 'ar_track_alvar_msgs/AlvarMarker' and not anno['name'].isdigit():
                 self.emit(SIGNAL('show_message'), self, "Failed", "Marker ID should be int!")
             else:
-                world_name = str(self.world_name_txt.toPlainText()).lower().replace(' ', '_')
+                # world_name = str(self.world_name_txt.toPlainText()).lower().replace(' ', '_')
+                world_name = self._const_world
                 self._new_annotation_name_list = self._callback['add_annotation'](anno, self.anno_type, world_name, self._map)
                 self.emit(SIGNAL("update_annotation_list"))
                 self._clear_on_annotation()
@@ -283,7 +319,7 @@ class QSlamWidget(QWidget):
         origin = self._drawing_objects['map'].info.origin
         w = self._drawing_objects['map'].info.width
         h = self._drawing_objects['map'].info.height
-        
+
         self.annotation['type'] = anno_type
         self.annotation['x'] = (-x + w) * resolution + origin.position.x
         self.annotation['y'] = y * resolution + origin.position.y
@@ -381,12 +417,13 @@ class QSlamWidget(QWidget):
 
             x = -((data['x'] - origin.position.x) / resolution - w)
             y = (data['y'] - origin.position.y) / resolution
+
             if data['type'] == "yocs_msgs/Waypoint":
                 #annotation_item = self._scene.addEllipse(x - (data['scale'][0] / resolution), y -(data['scale'][1] / resolution), data['scale'][0] / resolution * 2, data['scale'][1] / resolution * 2, pen=QPen(QColor(0, 0, 255)), brush=QBrush(QColor(0, 0, 255, 125)))
                 viz_marker_pose = QMatrix().rotate(-data['yaw']+180).map(self._viz_marker_polygon).translated(x, y)
                 annotation_item = self._scene.addPolygon(viz_marker_pose, pen=QPen(QColor(0, 0, 255)), brush=QBrush(QColor(0, 0, 255, 125)))
             elif data['type'] == "ar_track_alvar_msgs/AlvarMarker": 
-                viz_marker_pose = QMatrix().rotate(-(data['yaw']-90)+180).map(self._viz_marker_polygon).translated(x, y)
+                viz_marker_pose = QMatrix().rotate(-(data['yaw']-90)+180).map(self._viz_marker_polygon).translated(x, y)                
                 annotation_item = self._scene.addPolygon(viz_marker_pose, pen=QPen(QColor(0, 0, 255)), brush=QBrush(QColor(0, 0, 255, 125)))
             annotation_item.setZValue(2)
         if old_item:

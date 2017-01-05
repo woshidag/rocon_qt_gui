@@ -21,7 +21,7 @@ import geometry_msgs.msg as geometry_msgs
 
 from python_qt_binding.QtCore import Signal, QObject, pyqtSlot
 import rocon_qt_library.utils as utils
-
+from rocon_console import console
 
 class SlamWidgetInterface(QObject):
 
@@ -69,6 +69,8 @@ class SlamWidgetInterface(QObject):
         message = "Success"
         try:
             self.ac_handler.add(annotation, self.map_msg)
+            self.ac_handler.clear()
+            ## todo
             self.ac_handler.save()
         except WCFError as e:
             success = False
@@ -83,6 +85,7 @@ class SlamWidgetInterface(QObject):
         
         :param nav_msgs.OccupancyGrid msg: a map from system
         """
+        # console.logdebug("map_cb")
         self.map_frame = msg.header.frame_id
         self.resolution = msg.info.resolution
         self.w = msg.info.width
@@ -102,6 +105,7 @@ class SlamWidgetInterface(QObject):
 
         :param sensor_msgs.LaserScan msg: scans data from system
         """
+        # console.logdebug("scan_cb")
         scans = []
         trans_ptc = None
         if self.map_frame:
